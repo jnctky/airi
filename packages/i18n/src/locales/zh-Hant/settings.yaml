@@ -2301,6 +2301,11 @@ mmd:
     no-materials: 此模型沒有可用的材質。
     description: >-
       調整各模型部位（臉、頭髮、服裝、配件）的不透明度，設為 0 可隱藏該部位。
+livetalking:
+  enable: 使用 LiveTalking 真人口型頭像（wav2lip）
+  enable-description: 用 LiveTalking 服務的 WebRTC 視訊流替代本地模型渲染舞台，語音音訊會改道到該服務驅動口型。
+  server-url: LiveTalking 服務地址
+  server-url-description: LiveTalking 服務的基礎地址，例如 http://127.0.0.1:8010。
 tachie:
   title: Tachie 設定
   archive-description: Tachie 模型使用包含情緒命名圖片的 .tachie.zip 壓縮檔。

@@ -24,6 +24,8 @@ import VRM from './vrm.vue'
 import { useAiriCardStore } from '../../../../stores/modules/airi-card'
 import { useSettings } from '../../../../stores/settings'
 import { ModelSelectorDialog } from '../../dialogs/model-selector'
+import Bar from '../bar.vue'
+import CheckBar from '../check-bar.vue'
 import { resolveModelSettingsPanelRenderer } from './runtime'
 
 interface ModelSettingsPanelProps {
@@ -54,7 +56,7 @@ const { t } = useI18n()
 const modelSelectorOpen = ref(false)
 const settingsStore = useSettings()
 const airiCardStore = useAiriCardStore()
-const { stageModelRenderer, stageModelSelected, stageModelSelectedDisplayModel } = storeToRefs(settingsStore)
+const { stageModelRenderer, stageModelSelected, stageModelSelectedDisplayModel, livetalkingEnabled, livetalkingServerUrl } = storeToRefs(settingsStore)
 
 const effectiveRenderer = computed(() => resolveModelSettingsPanelRenderer({
   settingsRenderer: stageModelRenderer.value,
@@ -150,6 +152,21 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
         :view-controls-locked="godotViewControlsLocked"
         @patch-view-state="emit('patchGodotViewState', $event)"
       />
+      <div class="mt-2 flex flex-col gap-1">
+        <CheckBar
+          v-model="livetalkingEnabled"
+          text="settings.livetalking.enable"
+          description="settings.livetalking.enable-description"
+        />
+        <Bar text="settings.livetalking.server-url" :description="t('settings.livetalking.server-url-description')">
+          <input
+            v-model="livetalkingServerUrl"
+            type="text"
+            class="w-64 shrink-0 rounded-md bg-neutral-100 px-2 py-1 text-sm outline-none dark:bg-neutral-900"
+            spellcheck="false"
+          >
+        </Bar>
+      </div>
     </div>
   </ScrollableArea>
 </template>

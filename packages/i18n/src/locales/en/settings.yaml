@@ -2660,6 +2660,11 @@ mmd:
     description: >-
       Adjust the opacity of individual model parts (face, hair, clothing,
       accessories). Set a part to 0 to hide it.
+livetalking:
+  enable: Use LiveTalking real-person avatar (wav2lip)
+  enable-description: Renders the stage from a LiveTalking WebRTC server instead of the local model. Speech audio is routed to the server to drive the lip-sync.
+  server-url: LiveTalking server URL
+  server-url-description: The base URL of your LiveTalking server, for example http://127.0.0.1:8010.
 tachie:
   title: Tachie Settings
   archive-description: Tachie models use .tachie.zip archives containing emotion-named images.

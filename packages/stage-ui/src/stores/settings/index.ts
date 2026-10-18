@@ -5,6 +5,7 @@ import { useSettingsAnalytics } from './analytics'
 import { useSettingsControlsIsland } from './controls-island'
 import { useSettingsDeveloper } from './developer'
 import { useSettingsGeneral } from './general'
+import { useSettingsLivetalking } from './livetalking'
 import { useSettingsSpine } from './spine'
 import { useSettingsStageModel } from './stage-model'
 import { useSettingsTheme } from './theme'
@@ -16,6 +17,7 @@ export * from './beat-sync'
 export * from './controls-island'
 export * from './developer'
 export * from './general'
+export * from './livetalking'
 export * from './spine'
 export * from './stage-model'
 export * from './theme'
@@ -38,6 +40,7 @@ export const useSettings = defineStore('settings', () => {
   const tachie = useTachie()
   const controlsIsland = useSettingsControlsIsland()
   const developer = useSettingsDeveloper()
+  const livetalking = useSettingsLivetalking()
 
   async function resetState() {
     await stageModel.resetState()
@@ -48,6 +51,7 @@ export const useSettings = defineStore('settings', () => {
     theme.resetState()
     controlsIsland.resetState()
     developer.resetState()
+    livetalking.resetState()
   }
 
   // Extract refs from sub-stores to maintain proper reactivity
@@ -58,6 +62,7 @@ export const useSettings = defineStore('settings', () => {
   const themeRefs = storeToRefs(theme)
   const controlsIslandRefs = storeToRefs(controlsIsland)
   const developerRefs = storeToRefs(developer)
+  const livetalkingRefs = storeToRefs(livetalking)
 
   return {
     // Core settings
@@ -91,6 +96,10 @@ export const useSettings = defineStore('settings', () => {
     alwaysOnTop: controlsIslandRefs.alwaysOnTop,
     controlsIslandIconSize: controlsIslandRefs.controlsIslandIconSize,
     inspectUpdaterDiagnostics: developerRefs.inspectUpdaterDiagnostics,
+
+    // LiveTalking (wav2lip) settings
+    livetalkingEnabled: livetalkingRefs.livetalkingEnabled,
+    livetalkingServerUrl: livetalkingRefs.livetalkingServerUrl,
 
     // Methods
     setThemeColorsHue: theme.setThemeColorsHue,

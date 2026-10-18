@@ -30,10 +30,12 @@ import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import StageAvatarModelMissing from './stage-avatar-model-missing.vue'
 import StageRenderError from './stage-render-error.vue'
+import LiveTalkingStage from './LiveTalkingStage.vue'
 
 // import { useDuckDb } from '../../composables/use-duck-db'
 import { Emotion, EMOTION_EmotionMotionName_value, EMOTION_VRMExpressionName_value, EmotionThinkMotionName } from '../../constants/emotions'
 import { live2dMotionMagicProfiles, useLive2DMotionMagic, useLive2DMotionMagicSettings } from '../../features/motions/live2d'
+import { useLiveTalking, LiveTalkingPlaybackDriver } from '../../services/livetalking'
 import { getSpeechBusContext, speechOutputGetPlaybackState, speechOutputPlaybackStateChangedEvent } from '../../services/speech/bus'
 import { useLlmStreamingControlStore } from '../../stores/ai/chat-llm/streaming-control'
 import { useAudioContext, useSpeakingStore } from '../../stores/audio'
@@ -45,6 +47,7 @@ import { useAiriCardStore } from '../../stores/modules/airi-card'
 import { useSpeechStore } from '../../stores/modules/speech'
 import { useSettingsPresenceBubble } from '../../stores/presence-bubble'
 import { useSettings } from '../../stores/settings'
+import { useSettingsLivetalking } from '../../stores/settings/livetalking'
 import { useSettingsStageModel } from '../../stores/settings/stage-model'
 import { useSpeechOutputControlStore } from '../../stores/speech-output-control'
 import { useVoiceStore } from '../../stores/voice'
@@ -408,10 +411,32 @@ speechDestination.connect(audioContext.destination)
 watch(speechVolume, (volume) => {
   speechDestination.gain.setTargetAtTime(volume, audioContext.currentTime, 0.05)
 }, { immediate: true })
-const playback = new Playback(new BrowserPlayback(audioContext, {
+
+// --- LiveTalking (wav2lip) audio routing -------------------------------------------
+// When enabled, speech audio is uploaded to the LiveTalking server which drives
+// the talking-head video; the audible voice comes back over the WebRTC track,
+// so nothing is played through the local browser driver.
+const { getClient: getLiveTalkingClient } = useLiveTalking()
+const { livetalkingEnabled } = storeToRefs(useSettingsLivetalking())
+const livetalkingPlaybackDriver = new LiveTalkingPlaybackDriver(audioContext, getLiveTalkingClient)
+
+function muteLocalSpeech(muted: boolean) {
+  speechDestination.gain.setTargetAtTime(muted ? 0 : speechVolume.value, audioContext.currentTime, 0.05)
+}
+watch(livetalkingEnabled, muteLocalSpeech, { immediate: true })
+
+const browserPlaybackDriver = new BrowserPlayback(audioContext, {
   destination: speechAnalysis,
   onSource: (source) => { currentAudioSource.value = source },
-}))
+})
+const playback = new Playback({
+  nowMs: () => audioContext.currentTime * 1000,
+  play: (clip) => {
+    if (livetalkingEnabled.value && getLiveTalkingClient())
+      return livetalkingPlaybackDriver.play(clip)
+    return browserPlaybackDriver.play(clip)
+  },
+})
 let playingCount = 0
 
 function resetSpeakingState() {
@@ -701,8 +726,12 @@ defineExpose({
 <template>
   <div relative h-full w-full>
     <div relative h-full w-full>
+      <LiveTalkingStage
+        v-if="livetalkingEnabled && showStage"
+        :paused="paused"
+      />
       <Live2DScene
-        v-if="stageModelRenderer === 'live2d' && showStage"
+        v-if="stageModelRenderer === 'live2d' && !livetalkingEnabled && showStage"
         ref="live2dSceneRef"
         v-model:state="componentState"
         :context="live2d"
@@ -724,7 +753,7 @@ defineExpose({
         @error="handleStageRenderError"
       />
       <ThreeScene
-        v-if="stageModelRenderer === 'vrm' && showStage"
+        v-if="stageModelRenderer === 'vrm' && !livetalkingEnabled && showStage"
         ref="vrmViewerRef"
         v-model:state="componentState"
         :presence="presenceBubble"
@@ -743,7 +772,7 @@ defineExpose({
         @vrm-interact="onVRMInteract"
       />
       <SpineScene
-        v-if="stageModelRenderer === 'spine' && showStage"
+        v-if="stageModelRenderer === 'spine' && !livetalkingEnabled && showStage"
         ref="spineSceneRef"
         v-model:state="componentState"
         :background-url="activeBackgroundUrl"
@@ -760,7 +789,7 @@ defineExpose({
         @error="reportStageRenderError"
       />
       <TachieScene
-        v-if="stageModelRenderer === 'tachie' && showStage"
+        v-if="stageModelRenderer === 'tachie' && !livetalkingEnabled && showStage"
         ref="tachieSceneRef"
         v-model:state="componentState"
         :background-url="activeBackgroundUrl"
@@ -774,7 +803,7 @@ defineExpose({
         @error="reportStageRenderError"
       />
       <MMDScene
-        v-if="stageModelRenderer === 'mmd' && showStage"
+        v-if="stageModelRenderer === 'mmd' && !livetalkingEnabled && showStage"
         ref="mmdSceneRef"
         v-model:state="componentState"
         :background-url="activeBackgroundUrl"
