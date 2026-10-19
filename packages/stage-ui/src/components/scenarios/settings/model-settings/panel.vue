@@ -9,7 +9,7 @@ import type { Live2DContext } from '@proj-airi/stage-ui-live2d'
 import type { DisplayModel } from '../../../../stores/display-models'
 import type { ModelSettingsRuntimeSnapshot } from './runtime'
 
-import { Button, Callout, ScrollableArea } from '@proj-airi/ui'
+import { Button, Callout, FieldRange, ScrollableArea } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -24,6 +24,7 @@ import VRM from './vrm.vue'
 import { useAiriCardStore } from '../../../../stores/modules/airi-card'
 import { useSettings } from '../../../../stores/settings'
 import { ModelSelectorDialog } from '../../dialogs/model-selector'
+import { Section } from '../../../layouts'
 import Bar from '../bar.vue'
 import CheckBar from '../check-bar.vue'
 import { resolveModelSettingsPanelRenderer } from './runtime'
@@ -56,7 +57,7 @@ const { t } = useI18n()
 const modelSelectorOpen = ref(false)
 const settingsStore = useSettings()
 const airiCardStore = useAiriCardStore()
-const { stageModelRenderer, stageModelSelected, stageModelSelectedDisplayModel, livetalkingEnabled, livetalkingServerUrl } = storeToRefs(settingsStore)
+const { stageModelRenderer, stageModelSelected, stageModelSelectedDisplayModel, livetalkingEnabled, livetalkingServerUrl, livetalkingScale, livetalkingPosition } = storeToRefs(settingsStore)
 
 const effectiveRenderer = computed(() => resolveModelSettingsPanelRenderer({
   settingsRenderer: stageModelRenderer.value,
@@ -166,6 +167,46 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
             spellcheck="false"
           >
         </Bar>
+        <Section
+          v-if="livetalkingEnabled"
+          :title="t('settings.livetalking.scale-and-position.title')"
+          icon="i-solar:scale-bold-duotone"
+          :class="[
+            'rounded-xl',
+            'bg-white/80 dark:bg-black/75',
+            'backdrop-blur-lg',
+          ]"
+          size="sm"
+          :expand="true"
+        >
+          <FieldRange
+            v-model="livetalkingScale"
+            as="div"
+            :min="0.2"
+            :max="3"
+            :step="0.01"
+            :default-value="1"
+            :label="t('settings.livetalking.scale-and-position.scale')"
+          />
+          <FieldRange
+            v-model="livetalkingPosition.x"
+            as="div"
+            :min="-1000"
+            :max="1000"
+            :step="1"
+            :default-value="0"
+            :label="t('settings.livetalking.scale-and-position.x')"
+          />
+          <FieldRange
+            v-model="livetalkingPosition.y"
+            as="div"
+            :min="-1000"
+            :max="1000"
+            :step="1"
+            :default-value="0"
+            :label="t('settings.livetalking.scale-and-position.y')"
+          />
+        </Section>
       </div>
     </div>
   </ScrollableArea>

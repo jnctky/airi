@@ -2665,6 +2665,11 @@ livetalking:
   enable-description: Renders the stage from a LiveTalking WebRTC server instead of the local model. Speech audio is routed to the server to drive the lip-sync.
   server-url: LiveTalking server URL
   server-url-description: The base URL of your LiveTalking server, for example http://127.0.0.1:8010.
+  scale-and-position:
+    title: Scale & position
+  scale: Scale
+  position-x: Position X
+  position-y: Position Y
 tachie:
   title: Tachie Settings
   archive-description: Tachie models use .tachie.zip archives containing emotion-named images.

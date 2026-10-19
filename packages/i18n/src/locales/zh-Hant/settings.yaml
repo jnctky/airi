@@ -2306,6 +2306,11 @@ livetalking:
   enable-description: 用 LiveTalking 服務的 WebRTC 視訊流替代本地模型渲染舞台，語音音訊會改道到該服務驅動口型。
   server-url: LiveTalking 服務地址
   server-url-description: LiveTalking 服務的基礎地址，例如 http://127.0.0.1:8010。
+  scale-and-position:
+    title: 縮放與位置
+  scale: 縮放
+  position-x: 位置 X
+  position-y: 位置 Y
 tachie:
   title: Tachie 設定
   archive-description: Tachie 模型使用包含情緒命名圖片的 .tachie.zip 壓縮檔。

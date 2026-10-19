@@ -100,6 +100,8 @@ export const useSettings = defineStore('settings', () => {
     // LiveTalking (wav2lip) settings
     livetalkingEnabled: livetalkingRefs.livetalkingEnabled,
     livetalkingServerUrl: livetalkingRefs.livetalkingServerUrl,
+    livetalkingScale: livetalkingRefs.livetalkingScale,
+    livetalkingPosition: livetalkingRefs.livetalkingPosition,
 
     // Methods
     setThemeColorsHue: theme.setThemeColorsHue,

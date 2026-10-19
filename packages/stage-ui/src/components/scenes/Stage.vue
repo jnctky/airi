@@ -417,7 +417,7 @@ watch(speechVolume, (volume) => {
 // the talking-head video; the audible voice comes back over the WebRTC track,
 // so nothing is played through the local browser driver.
 const { getClient: getLiveTalkingClient } = useLiveTalking()
-const { livetalkingEnabled } = storeToRefs(useSettingsLivetalking())
+const { livetalkingEnabled, livetalkingScale, livetalkingPosition } = storeToRefs(useSettingsLivetalking())
 const livetalkingPlaybackDriver = new LiveTalkingPlaybackDriver(audioContext, getLiveTalkingClient)
 
 function muteLocalSpeech(muted: boolean) {
@@ -729,6 +729,8 @@ defineExpose({
       <LiveTalkingStage
         v-if="livetalkingEnabled && showStage"
         :paused="paused"
+        :scale="livetalkingScale"
+        :position="livetalkingPosition"
       />
       <Live2DScene
         v-if="stageModelRenderer === 'live2d' && !livetalkingEnabled && showStage"

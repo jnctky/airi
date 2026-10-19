@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { errorMessageFrom } from '@moeru/std'
 import { useLiveTalking } from '../../services/livetalking'
 
 const props = defineProps<{
   paused?: boolean
+  /** Visual zoom applied to the video (default 1 = fit the stage). */
+  scale?: number
+  /** Pixel offsets relative to the stage centre. */
+  position?: { x: number, y: number }
 }>()
 
 const { getClient } = useLiveTalking()
@@ -55,6 +59,10 @@ watch(() => props.paused, (paused) => {
     void videoRef.value.play().catch(() => {})
 })
 
+const videoStyle = computed(() => ({
+  transform: `translate(${props.position?.x ?? 0}px, ${props.position?.y ?? 0}px) scale(${props.scale ?? 1})`,
+}))
+
 onMounted(() => void connect())
 
 onUnmounted(() => {
@@ -64,12 +72,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div relative h-full w-full flex-1 overflow-hidden bg-black>
+  <!-- Absolutely positioned: the video has an intrinsic resolution (e.g. 1024x1440),
+       so any `h-full` chain break makes it render at native size and blow up the
+       stage. Filling the nearest positioned ancestor keeps it fitted instead. -->
+  <div absolute inset-0 z-0 overflow-hidden bg-black>
     <video
       ref="videoRef"
       autoplay
       playsinline
-      class="h-full w-full object-contain"
+      class="h-full w-full object-contain will-change-transform"
+      :style="videoStyle"
     />
     <div
       v-if="status !== 'connected'"
