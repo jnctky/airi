@@ -51,8 +51,13 @@ function scheduleRetry() {
   }, 5000)
 }
 
-// Re-connect when the server URL setting changes.
-watch(() => getClient()?.serverUrl, () => void connect())
+// Re-connect when the server URL or the selected avatar changes: the shared
+// client is recreated on either change, and the old stream belongs to a closed
+// peer connection, so the video element must be fed the new one.
+watch(
+  () => `${getClient()?.serverUrl ?? ''}|${getClient()?.avatarId ?? ''}`,
+  () => void connect(),
+)
 
 watch(() => props.paused, (paused) => {
   if (!paused && videoRef.value)

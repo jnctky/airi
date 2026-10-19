@@ -2306,6 +2306,14 @@ livetalking:
   enable-description: 用 LiveTalking 服務的 WebRTC 視訊流替代本地模型渲染舞台，語音音訊會改道到該服務驅動口型。
   server-url: LiveTalking 服務地址
   server-url-description: LiveTalking 服務的基礎地址，例如 http://127.0.0.1:8010。
+  avatar:
+    title: 頭像
+    description: 從伺服器 data/avatars 中選擇頭像，切換後會自動重新連線載入，不需要重啟服務。
+    placeholder: 選擇頭像
+    server-default: 跟隨伺服器預設
+    server-default-description: 使用服務啟動參數 --avatar_id 指定的頭像
+    frame-summary: '{frames} 幀 · {seconds}s'
+    list-failed: '無法從伺服器取得頭像列表：{error}'
   scale-and-position:
     title: 縮放與位置
   scale: 縮放

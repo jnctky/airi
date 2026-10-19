@@ -9,6 +9,11 @@ import { defineStore } from 'pinia'
 export const useSettingsLivetalking = defineStore('settings-livetalking', () => {
   const livetalkingEnabled = useLocalStorageManualReset<boolean>('settings/livetalking/enabled', false)
   const livetalkingServerUrl = useLocalStorageManualReset<string>('settings/livetalking/server-url', 'http://127.0.0.1:8010')
+  /**
+   * 服务端头像 ID（`data/avatars/<id>`）。空字符串表示跟随服务端启动参数
+   * `--avatar_id` 的默认头像；非空时随 `/offer` 一起发送，服务端按需加载并缓存。
+   */
+  const livetalkingAvatar = useLocalStorageManualReset<string>('settings/livetalking/avatar', '')
   /** Visual zoom of the WebRTC video on the stage. */
   const livetalkingScale = useLocalStorageManualReset<number>('settings/livetalking/scale', 1)
   /** Pixel offsets of the video relative to the stage centre. */
@@ -17,6 +22,7 @@ export const useSettingsLivetalking = defineStore('settings-livetalking', () => 
   function resetState() {
     livetalkingEnabled.reset()
     livetalkingServerUrl.reset()
+    livetalkingAvatar.reset()
     livetalkingScale.reset()
     livetalkingPosition.reset()
   }
@@ -24,6 +30,7 @@ export const useSettingsLivetalking = defineStore('settings-livetalking', () => 
   return {
     livetalkingEnabled,
     livetalkingServerUrl,
+    livetalkingAvatar,
     livetalkingScale,
     livetalkingPosition,
 

@@ -36,7 +36,7 @@ export class LiveTalkingClient {
   private sessionid: string | undefined
   private decodeContext: AudioContext | undefined
 
-  constructor(public serverUrl: string) {}
+  constructor(public serverUrl: string, public avatarId = '') {}
 
   /** Established WebRTC media stream, or undefined before the first successful connect. */
   get mediaStream() {
@@ -75,8 +75,15 @@ export class LiveTalkingClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // The session id is stable per tab, so a reload replaces the previous
-      // session instead of occupying yet another server slot.
-      body: JSON.stringify({ sdp: pc.localDescription?.sdp, type: pc.localDescription?.type, sessionid: getOrCreateSessionId() }),
+      // session instead of occupying yet another server slot. `avatar` picks
+      // which avatar (data/avatars/<id>) the server should stream for this
+      // session; omitted means "whatever the server started with".
+      body: JSON.stringify({
+        sdp: pc.localDescription?.sdp,
+        type: pc.localDescription?.type,
+        sessionid: getOrCreateSessionId(),
+        ...(this.avatarId ? { avatar: this.avatarId } : {}),
+      }),
     })
     if (!response.ok)
       throw new Error(`LiveTalking /offer failed: HTTP ${response.status}`)

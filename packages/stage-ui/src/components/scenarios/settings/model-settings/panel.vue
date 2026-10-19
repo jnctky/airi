@@ -9,9 +9,9 @@ import type { Live2DContext } from '@proj-airi/stage-ui-live2d'
 import type { DisplayModel } from '../../../../stores/display-models'
 import type { ModelSettingsRuntimeSnapshot } from './runtime'
 
-import { Button, Callout, FieldRange, ScrollableArea } from '@proj-airi/ui'
+import { Button, Callout, ComboboxSelect, FieldRange, ScrollableArea } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Godot from './godot.vue'
@@ -57,7 +57,61 @@ const { t } = useI18n()
 const modelSelectorOpen = ref(false)
 const settingsStore = useSettings()
 const airiCardStore = useAiriCardStore()
-const { stageModelRenderer, stageModelSelected, stageModelSelectedDisplayModel, livetalkingEnabled, livetalkingServerUrl, livetalkingScale, livetalkingPosition } = storeToRefs(settingsStore)
+const { stageModelRenderer, stageModelSelected, stageModelSelectedDisplayModel, livetalkingEnabled, livetalkingServerUrl, livetalkingAvatar, livetalkingScale, livetalkingPosition } = storeToRefs(settingsStore)
+
+interface LiveTalkingAvatarEntry {
+  id: string
+  frames: number
+  seconds: number
+}
+
+const avatarList = ref<LiveTalkingAvatarEntry[]>([])
+const avatarListLoading = ref(false)
+const avatarListError = ref('')
+
+const avatarOptions = computed(() => [
+  {
+    value: '',
+    label: t('settings.livetalking.avatar.server-default'),
+    description: t('settings.livetalking.avatar.server-default-description'),
+  },
+  ...avatarList.value.map(avatar => ({
+    value: avatar.id,
+    label: avatar.id,
+    description: t('settings.livetalking.avatar.frame-summary', { frames: avatar.frames, seconds: avatar.seconds }),
+  })),
+])
+
+/**
+ * 头像列表来自服务端 `GET /api/avatars`（扫描 data/avatars）。
+ * 服务端不可达时只保留「跟随服务端默认」一项，不阻塞其它设置。
+ */
+async function loadAvatarList() {
+  const base = (livetalkingServerUrl.value ?? '').trim().replace(/\/+$/, '')
+  if (!base)
+    return
+  avatarListLoading.value = true
+  avatarListError.value = ''
+  try {
+    const response = await fetch(`${base}/api/avatars`)
+    const payload = await response.json()
+    if (payload?.code !== 0)
+      throw new Error(payload?.msg ?? 'unexpected response')
+    avatarList.value = (payload.data?.avatars ?? []) as LiveTalkingAvatarEntry[]
+    // 选中的头像已从服务端删除时回落到默认，避免一直连不上
+    if (livetalkingAvatar.value && !avatarList.value.some(a => a.id === livetalkingAvatar.value))
+      livetalkingAvatar.value = ''
+  }
+  catch (error) {
+    avatarList.value = []
+    avatarListError.value = error instanceof Error ? error.message : String(error)
+  }
+  finally {
+    avatarListLoading.value = false
+  }
+}
+
+watch(livetalkingServerUrl, () => void loadAvatarList(), { immediate: true })
 
 const effectiveRenderer = computed(() => resolveModelSettingsPanelRenderer({
   settingsRenderer: stageModelRenderer.value,
@@ -167,6 +221,29 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
             spellcheck="false"
           >
         </Bar>
+        <!-- 头像选择：值随 /offer 发给服务端，切换即重连，不需要改 --avatar_id 重启 -->
+        <div
+          v-if="livetalkingEnabled"
+          class="w-full flex items-center justify-between gap-2 rounded-lg bg-neutral-50 px-4 py-3 text-sm dark:bg-neutral-800"
+        >
+          <div>
+            {{ t('settings.livetalking.avatar.title') }}
+            <div class="text-sm text-neutral-500">
+              {{ t('settings.livetalking.avatar.description') }}
+            </div>
+            <div v-if="avatarListError" class="mt-1 text-xs text-red-500">
+              {{ t('settings.livetalking.avatar.list-failed', { error: avatarListError }) }}
+            </div>
+          </div>
+          <div class="w-64 shrink-0">
+            <ComboboxSelect
+              v-model="livetalkingAvatar"
+              :options="avatarOptions"
+              :disabled="avatarListLoading"
+              :placeholder="t('settings.livetalking.avatar.placeholder')"
+            />
+          </div>
+        </div>
         <Section
           v-if="livetalkingEnabled"
           :title="t('settings.livetalking.scale-and-position.title')"
@@ -186,7 +263,7 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
             :max="3"
             :step="0.01"
             :default-value="1"
-            :label="t('settings.livetalking.scale-and-position.scale')"
+            :label="t('settings.livetalking.scale')"
           />
           <FieldRange
             v-model="livetalkingPosition.x"
@@ -195,7 +272,7 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
             :max="1000"
             :step="1"
             :default-value="0"
-            :label="t('settings.livetalking.scale-and-position.x')"
+            :label="t('settings.livetalking.position-x')"
           />
           <FieldRange
             v-model="livetalkingPosition.y"
@@ -204,7 +281,7 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
             :max="1000"
             :step="1"
             :default-value="0"
-            :label="t('settings.livetalking.scale-and-position.y')"
+            :label="t('settings.livetalking.position-y')"
           />
         </Section>
       </div>

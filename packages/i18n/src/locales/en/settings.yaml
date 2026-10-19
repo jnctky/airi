@@ -2665,6 +2665,14 @@ livetalking:
   enable-description: Renders the stage from a LiveTalking WebRTC server instead of the local model. Speech audio is routed to the server to drive the lip-sync.
   server-url: LiveTalking server URL
   server-url-description: The base URL of your LiveTalking server, for example http://127.0.0.1:8010.
+  avatar:
+    title: Avatar
+    description: Pick an avatar from the server's data/avatars folder. Switching reconnects automatically, no restart needed.
+    placeholder: Select an avatar
+    server-default: Server default
+    server-default-description: Use the avatar set by the server's --avatar_id flag
+    frame-summary: '{frames} frames · {seconds}s'
+    list-failed: 'Could not load avatars from the server: {error}'
   scale-and-position:
     title: Scale & position
   scale: Scale
