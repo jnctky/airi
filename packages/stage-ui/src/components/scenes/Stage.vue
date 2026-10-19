@@ -646,12 +646,15 @@ useEventListener(['click', 'touchstart', 'keydown'], resumeAudioContextOnInterac
 //   await getDb()
 // })
 
-watch([stageModelRenderer, () => props.paused], ([renderer]) => {
-  if (renderer === 'godot') {
+watch([stageModelRenderer, livetalkingEnabled, () => props.paused], ([renderer, livetalking]) => {
+  // LiveTalking replaces the local model with a WebRTC video stream that has no
+  // loading phases of its own, so the stage is "mounted" right away. Otherwise
+  // the startup overlay would wait forever for a scene that never reports state.
+  if (renderer === 'godot' || livetalking) {
     componentState.value = 'mounted'
   }
 
-  if (renderer !== 'live2d') {
+  if (renderer !== 'live2d' || livetalking) {
     resetLive2dLipSync()
     return
   }
