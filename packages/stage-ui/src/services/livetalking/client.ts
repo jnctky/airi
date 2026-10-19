@@ -8,6 +8,28 @@ import type { PlaybackClip, PlayedAudio, PlayingAudio } from '@proj-airi/pipelin
  * avatar lip-syncs to AIRI's own TTS voice.
  */
 
+const SESSION_STORAGE_KEY = 'settings/livetalking/session-id'
+
+/**
+ * Stable-per-tab session id. LiveTalking keeps one avatar session per WebRTC
+ * offer and rejects new offers once `max_session` is reached, so a page reload
+ * must reuse the same id (the server then replaces the old session instead of
+ * leaking it). sessionStorage (not localStorage) keeps tabs independent.
+ */
+function getOrCreateSessionId(): string {
+  try {
+    const existing = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    if (existing)
+      return existing
+    const id = crypto.randomUUID()
+    sessionStorage.setItem(SESSION_STORAGE_KEY, id)
+    return id
+  }
+  catch {
+    return crypto.randomUUID()
+  }
+}
+
 export class LiveTalkingClient {
   private pc: RTCPeerConnection | undefined
   private stream: MediaStream | undefined
@@ -33,7 +55,7 @@ export class LiveTalkingClient {
     if (this.connected && this.stream)
       return this.stream
 
-    this.disconnect()
+    this.teardownLocal()
 
     const base = this.serverUrl.replace(/\/+$/, '')
     const pc = new RTCPeerConnection()
@@ -52,7 +74,9 @@ export class LiveTalkingClient {
     const response = await fetch(`${base}/offer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sdp: pc.localDescription?.sdp, type: pc.localDescription?.type }),
+      // The session id is stable per tab, so a reload replaces the previous
+      // session instead of occupying yet another server slot.
+      body: JSON.stringify({ sdp: pc.localDescription?.sdp, type: pc.localDescription?.type, sessionid: getOrCreateSessionId() }),
     })
     if (!response.ok)
       throw new Error(`LiveTalking /offer failed: HTTP ${response.status}`)
@@ -102,6 +126,21 @@ export class LiveTalkingClient {
   }
 
   disconnect() {
+    // Best effort: free the server-side slot immediately. `keepalive` lets the
+    // request survive a page unload.
+    const base = this.serverUrl.replace(/\/+$/, '')
+    if (this.sessionid) {
+      void fetch(`${base}/session/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionid: this.sessionid }),
+        keepalive: true,
+      }).catch(() => {})
+    }
+    this.teardownLocal()
+  }
+
+  private teardownLocal() {
     this.pc?.close()
     this.pc = undefined
     this.stream = undefined
