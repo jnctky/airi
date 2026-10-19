@@ -69,9 +69,16 @@ const avatarList = ref<LiveTalkingAvatarEntry[]>([])
 const avatarListLoading = ref(false)
 const avatarListError = ref('')
 
+/** ComboboxItem 禁止空字符串 value（空值会被解释为“清除选择”），用哨兵表示“跟随服务端默认”。 */
+const SERVER_DEFAULT_AVATAR = '__server_default__'
+const livetalkingAvatarModel = computed({
+  get: () => livetalkingAvatar.value || SERVER_DEFAULT_AVATAR,
+  set: (v: string) => { livetalkingAvatar.value = v === SERVER_DEFAULT_AVATAR ? '' : v },
+})
+
 const avatarOptions = computed(() => [
   {
-    value: '',
+    value: SERVER_DEFAULT_AVATAR,
     label: t('settings.livetalking.avatar.server-default'),
     description: t('settings.livetalking.avatar.server-default-description'),
   },
@@ -237,7 +244,7 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
           </div>
           <div class="w-64 shrink-0">
             <ComboboxSelect
-              v-model="livetalkingAvatar"
+              v-model="livetalkingAvatarModel"
               :options="avatarOptions"
               :disabled="avatarListLoading"
               :placeholder="t('settings.livetalking.avatar.placeholder')"
