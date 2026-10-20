@@ -28,14 +28,14 @@ import { useBroadcastChannel, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from 'vue'
 
+import LiveTalkingStage from './LiveTalkingStage.vue'
 import StageAvatarModelMissing from './stage-avatar-model-missing.vue'
 import StageRenderError from './stage-render-error.vue'
-import LiveTalkingStage from './LiveTalkingStage.vue'
 
 // import { useDuckDb } from '../../composables/use-duck-db'
 import { Emotion, EMOTION_EmotionMotionName_value, EMOTION_VRMExpressionName_value, EmotionThinkMotionName } from '../../constants/emotions'
 import { live2dMotionMagicProfiles, useLive2DMotionMagic, useLive2DMotionMagicSettings } from '../../features/motions/live2d'
-import { useLiveTalking, LiveTalkingPlaybackDriver } from '../../services/livetalking'
+import { LiveTalkingPlaybackDriver, useLiveTalking } from '../../services/livetalking'
 import { getSpeechBusContext, speechOutputGetPlaybackState, speechOutputPlaybackStateChangedEvent } from '../../services/speech/bus'
 import { useLlmStreamingControlStore } from '../../stores/ai/chat-llm/streaming-control'
 import { useAudioContext, useSpeakingStore } from '../../stores/audio'
@@ -344,10 +344,17 @@ function toStageEmotionPayload(payload: { name: string, intensity: number }): Em
   }
 }
 
+// LiveTalking 多片段头像按情绪挑动作片段用；ACT 信号在文本流开始时就到，
+// 一般早于这段回复的第一句 TTS 上传。
+const liveTalkingEmotion = ref<string | undefined>()
+
 chatHookCleanups.push(streamingControl.onSignal(async (signal) => {
   if (signal.type === 'act') {
     const act = normalizeActPayload(signal.payload)
     let explicitLive2DMotion = false
+
+    if (act.emotion)
+      liveTalkingEmotion.value = act.emotion.name
 
     if (stageModelRenderer.value === 'live2d') {
       if (act.motion) {
@@ -417,8 +424,18 @@ watch(speechVolume, (volume) => {
 // the talking-head video; the audible voice comes back over the WebRTC track,
 // so nothing is played through the local browser driver.
 const { getClient: getLiveTalkingClient } = useLiveTalking()
-const { livetalkingEnabled, livetalkingScale, livetalkingPosition } = storeToRefs(useSettingsLivetalking())
-const livetalkingPlaybackDriver = new LiveTalkingPlaybackDriver(audioContext, getLiveTalkingClient)
+const {
+  livetalkingEnabled,
+  livetalkingScale,
+  livetalkingPosition,
+  livetalkingSemanticEmotion,
+  livetalkingSentenceSplit,
+} = storeToRefs(useSettingsLivetalking())
+const livetalkingPlaybackDriver = new LiveTalkingPlaybackDriver(audioContext, getLiveTalkingClient, {
+  getEmotion: () => liveTalkingEmotion.value,
+  getSemanticEmotion: () => livetalkingSemanticEmotion.value,
+  getSentenceSplit: () => livetalkingSentenceSplit.value,
+})
 
 function muteLocalSpeech(muted: boolean) {
   speechDestination.gain.setTargetAtTime(muted ? 0 : speechVolume.value, audioContext.currentTime, 0.05)
@@ -447,8 +464,11 @@ function resetSpeakingState() {
 // A response leaves the active turns after its playback drains, or at once
 // when it is canceled or interrupted.
 watch(() => voice.activeTurns, (turns) => {
-  if (turns.length === 0)
+  if (turns.length === 0) {
     speechVoicing.value = false
+    // 一轮回复结束就清掉情绪，下一轮没有 ACT 信号时不会沿用上一轮的情绪
+    liveTalkingEmotion.value = undefined
+  }
 })
 
 const cards = useAiriCardStore()

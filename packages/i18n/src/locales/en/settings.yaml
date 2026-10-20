@@ -2673,6 +2673,10 @@ livetalking:
     server-default-description: Use the avatar set by the server's --avatar_id flag
     frame-summary: '{frames} frames · {seconds}s'
     list-failed: 'Could not load avatars from the server: {error}'
+  semantic-emotion: Pick action clips by emotion
+  semantic-emotion-description: Each sentence carries the conversation's emotion (from the LLM emotion tag), so the server only picks action clips of that emotion — for example leaning in while emphasising. Requires an avatar with multiple action clips (clips.json).
+  sentence-split: Split audio per sentence
+  sentence-split-description: Each sentence is uploaded separately with a sentence id, so the server switches action clips between sentences instead of mid-sentence. When off, the whole reply plays continuously and clips only change when they finish.
   scale-and-position:
     title: Scale & position
   scale: Scale

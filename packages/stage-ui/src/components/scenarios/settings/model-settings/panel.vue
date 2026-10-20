@@ -9,11 +9,14 @@ import type { Live2DContext } from '@proj-airi/stage-ui-live2d'
 import type { DisplayModel } from '../../../../stores/display-models'
 import type { ModelSettingsRuntimeSnapshot } from './runtime'
 
+import { errorMessageFrom } from '@moeru/std'
 import { Button, Callout, ComboboxSelect, FieldRange, ScrollableArea } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Bar from '../bar.vue'
+import CheckBar from '../check-bar.vue'
 import Godot from './godot.vue'
 import Live2D from './live2d.vue'
 import MMD from './mmd.vue'
@@ -23,10 +26,8 @@ import VRM from './vrm.vue'
 
 import { useAiriCardStore } from '../../../../stores/modules/airi-card'
 import { useSettings } from '../../../../stores/settings'
-import { ModelSelectorDialog } from '../../dialogs/model-selector'
 import { Section } from '../../../layouts'
-import Bar from '../bar.vue'
-import CheckBar from '../check-bar.vue'
+import { ModelSelectorDialog } from '../../dialogs/model-selector'
 import { resolveModelSettingsPanelRenderer } from './runtime'
 
 interface ModelSettingsPanelProps {
@@ -57,7 +58,7 @@ const { t } = useI18n()
 const modelSelectorOpen = ref(false)
 const settingsStore = useSettings()
 const airiCardStore = useAiriCardStore()
-const { stageModelRenderer, stageModelSelected, stageModelSelectedDisplayModel, livetalkingEnabled, livetalkingServerUrl, livetalkingAvatar, livetalkingScale, livetalkingPosition } = storeToRefs(settingsStore)
+const { stageModelRenderer, stageModelSelected, stageModelSelectedDisplayModel, livetalkingEnabled, livetalkingServerUrl, livetalkingAvatar, livetalkingScale, livetalkingPosition, livetalkingSemanticEmotion, livetalkingSentenceSplit } = storeToRefs(settingsStore)
 
 interface LiveTalkingAvatarEntry {
   id: string
@@ -111,7 +112,7 @@ async function loadAvatarList() {
   }
   catch (error) {
     avatarList.value = []
-    avatarListError.value = error instanceof Error ? error.message : String(error)
+    avatarListError.value = errorMessageFrom(error) ?? String(error)
   }
   finally {
     avatarListLoading.value = false
@@ -251,6 +252,19 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
             />
           </div>
         </div>
+        <!-- 二期：动作片段的两项调度能力，随每段语音上传给服务端 -->
+        <CheckBar
+          v-if="livetalkingEnabled"
+          v-model="livetalkingSemanticEmotion"
+          text="settings.livetalking.semantic-emotion"
+          description="settings.livetalking.semantic-emotion-description"
+        />
+        <CheckBar
+          v-if="livetalkingEnabled"
+          v-model="livetalkingSentenceSplit"
+          text="settings.livetalking.sentence-split"
+          description="settings.livetalking.sentence-split-description"
+        />
         <Section
           v-if="livetalkingEnabled"
           :title="t('settings.livetalking.scale-and-position.title')"

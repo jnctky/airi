@@ -103,6 +103,8 @@ export const useSettings = defineStore('settings', () => {
     livetalkingAvatar: livetalkingRefs.livetalkingAvatar,
     livetalkingScale: livetalkingRefs.livetalkingScale,
     livetalkingPosition: livetalkingRefs.livetalkingPosition,
+    livetalkingSemanticEmotion: livetalkingRefs.livetalkingSemanticEmotion,
+    livetalkingSentenceSplit: livetalkingRefs.livetalkingSentenceSplit,
 
     // Methods
     setThemeColorsHue: theme.setThemeColorsHue,

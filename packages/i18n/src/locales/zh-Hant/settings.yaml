@@ -2314,6 +2314,10 @@ livetalking:
     server-default-description: 使用服務啟動參數 --avatar_id 指定的頭像
     frame-summary: '{frames} 幀 · {seconds}s'
     list-failed: '無法從伺服器取得頭像列表：{error}'
+  semantic-emotion: 依語意選情緒
+  semantic-emotion-description: 每句語音帶上對話情緒（來自 LLM 的情緒標記），伺服器只在同情緒的動作片段裡挑，例如強調時用前傾的片段。需要頭像包支援多動作片段（clips.json）。
+  sentence-split: 依句切音訊
+  sentence-split-description: 每句單獨上傳並帶句子標識，伺服器在句子之間換動作片段，切換不會落在句子中間。關閉後整段語音連續播放，片段只在自己播完時更換。
   scale-and-position:
     title: 縮放與位置
   scale: 縮放

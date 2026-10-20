@@ -30,6 +30,23 @@ function getOrCreateSessionId(): string {
   }
 }
 
+/**
+ * Per-clip metadata sent with `/humanaudio`.
+ *
+ * LiveTalking 的多片段头像（clips.json）可以按情绪挑动作片段、按句切换动作，
+ * 两项都由服务端开启开关后生效；这里只负责把前端知道的信息传过去。
+ */
+export interface SpeechUploadOptions {
+  /** 当前对话情绪（airi 的 ACT 信号），服务端映射到片段池。 */
+  emotion?: string
+  /** 句子标识。同一句音频用同一个 id，变化即句子边界。 */
+  segment?: string
+  /** 按语义选情绪开关。 */
+  semanticEmotion?: boolean
+  /** 按句切音频开关。 */
+  sentenceSplit?: boolean
+}
+
 export class LiveTalkingClient {
   private pc: RTCPeerConnection | undefined
   private stream: MediaStream | undefined
@@ -102,7 +119,7 @@ export class LiveTalkingClient {
    * Decode any browser-supported audio (mp3 / wav / ogg …) and upload it as a
    * 16-bit PCM WAV so the server's soundfile reader always accepts it.
    */
-  async uploadSpeechAudio(clip: PlaybackClip): Promise<void> {
+  async uploadSpeechAudio(clip: PlaybackClip, options: SpeechUploadOptions = {}): Promise<void> {
     const base = this.serverUrl.replace(/\/+$/, '')
     if (!this.sessionid)
       await this.connect()
@@ -111,6 +128,13 @@ export class LiveTalkingClient {
     const form = new FormData()
     form.append('sessionid', this.sessionid ?? '')
     form.append('file', new Blob([wav], { type: 'audio/wav' }), 'speech.wav')
+    // 二期元数据：显式发送开关，避免服务端把「没传」当成默认开启
+    if (options.emotion)
+      form.append('emotion', options.emotion)
+    if (options.segment)
+      form.append('seg', options.segment)
+    form.append('semantic_emotion', options.semanticEmotion ? '1' : '0')
+    form.append('sentence_split', options.sentenceSplit ? '1' : '0')
 
     const response = await fetch(`${base}/humanaudio`, { method: 'POST', body: form })
     if (!response.ok)
